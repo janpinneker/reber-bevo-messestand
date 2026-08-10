@@ -1144,57 +1144,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // stand an der Innenseite der rechten Blockwand, im Schwenkbereich des
   // Türblatts, überlappte sichtbar sobald die Tür (seit der interaktiven
   // Scharnier-Drehung) weiter aufgezogen wurde.
-  const acrylFlyer = new W.MeshStandardMaterial({ color: 0xeaf6fb, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.30 });
-
-  // --- Broschürenhalter: größerer zweischaliger Acryl-Wandhalter (gleiche Optik
-  // wie der Flyerständer, aber höher — ein durchgehendes Fach statt einem A4-
-  // Fach). Kein Referenzfoto diesmal, Kamerapunkte dienten laut Nutzer nur als
-  // Orientierung; ihre x-Werte (3,994 / 7,006 Standkoordinate) treffen fast
-  // exakt die schmalen Stirnseiten von Wand 1/2 (W1.x0-0,006 / W1.x1+0,006,
-  // siehe P.w1_left/right weiter oben), ihr z (~0,61/0,66) liegt mittig in der
-  // 0,50 m Wandtiefe — deshalb dort montiert statt auf der breiten Front-
-  // /Rückfläche. Beide auf gleicher Höhe (Mittel aus 1,274 und 1,411 m), wie
-  // ausdrücklich verlangt.
-  // Y auf Nutzervorgabe gesetzt (04.08.2026): Kamera-Zielpunkt {t:[...,0.796,...]}
-  // als Mittelpunkt uebernommen, damit der Halter unterhalb des Pos.3/4-Swoosh
-  // sitzt statt mitten hindurch (siehe hunter_o2_side.jpg/rainbird_o2_side.jpg).
-  const BROSCHUERE_Y = 0.796;
-  // Blau-transparentes Acryl fuer die Rueckplatte (Nutzerwunsch, 02.08.2026) --
-  // fällt gegen die vordere Klarsichttasche als eigene Flaeche auf.
-  const acrylFlyerBlau = new W.MeshStandardMaterial({ color: 0x1f5f8a, roughness: 0.08, metalness: 0.15, transparent: true, opacity: 0.42 });
-  function broschuerenhalter(wallX, dir, cz, id) {
-    // BUGFIX (02.08.2026): t stand auf 0,004 m -- box() zieht SEAM_INSET (0,006 m
-    // pro Seite, 0,012 m insgesamt) von der Breite ab, ein Wert unter 0,012 m
-    // kollabiert dadurch auf die Mindestgroesse 0,001 m (praktisch unsichtbar).
-    // Genau das betraf Rueckplatte UND Vordertasche (beide nutzten t als duenne
-    // Seite) -- sichtbar blieb nur die 0,004 m hohe Bodenlasche (h wird von
-    // SEAM_INSET nicht angefasst) und die freischwebende Flyer-Flaeche. Sah
-    // dadurch aus wie eine schwebende blaue Karte ohne erkennbaren Halter.
-    // t jetzt 0,018 m (übersteht den Inset mit ~0,006 m sichtbarer Dicke).
-    const bw = 0.26, bh = 0.62, fh = 0.55, depth = 0.04, t = 0.018;
-    const y0 = BROSCHUERE_Y - bh / 2;
-    const z0 = cz - bw / 2, z1 = cz + bw / 2;
-    const back0 = dir < 0 ? wallX - t : wallX, back1 = dir < 0 ? wallX : wallX + t;
-    const lip0 = dir < 0 ? wallX - depth : wallX, lip1 = dir < 0 ? wallX : wallX + depth;
-    const front0 = dir < 0 ? wallX - depth : wallX + depth - t;
-    const front1 = dir < 0 ? wallX - depth + t : wallX + depth;
-    box(back0, z0, back1, z1, bh, y0, acrylFlyerBlau);                 // Rückplatte, wandbündig, jetzt blau
-    box(lip0, z0, lip1, z1, t, y0, acrylFlyer);                        // Bodenlasche
-    box(front0, z0, front1, z1, fh, y0, acrylFlyer);                   // Vordertasche, klar
-    // Seitenwangen, damit die Tasche auch von der Seite als Koerper erkennbar
-    // ist statt als zwei duenne Platten ohne sichtbare Verbindung.
-    for (const s of [z0, z1 - t])
-      box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylFlyer);
-    [0x245478, 0x00a8e4].forEach((c, i) => {
-      const bro = new W.Mesh(new W.PlaneGeometry(bw - 0.04, fh - 0.05),
-        new W.MeshStandardMaterial({ color: c, roughness: 0.6, side: W.DoubleSide }));
-      bro.position.set(wallX + dir * (depth / 2 + i * 0.006), y0 + (fh - 0.05) / 2 + 0.02, cz);
-      bro.rotation.y = dir < 0 ? -Math.PI / 2 : Math.PI / 2;
-      root.add(bro);
-    });
-  }
-  broschuerenhalter(W1.x0, -1, (W1.z0 + W1.z1) / 2, 'broschuere_1');
-  broschuerenhalter(W1.x1, 1, (W1.z0 + W1.z1) / 2, 'broschuere_2');
+  // Broschürenhalter an den Stirnseiten von Wand 1/2 (x 4,00 / 7,00) auf
+  // Nutzerwunsch entfernt (10.08.2026).
 
   // --- L-Blumenkasten, Pos 11-16: Arme 2,76 / 2,21 m, 0,50 breit, 1,00 hoch ---
   // In den neuen Messebauer-Zeichnungen nicht enthalten, Lage aus der Grafikskizze
