@@ -645,8 +645,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // Die beiden schmalen Pfosten links/rechts der Tueroeffnung (duenn in x, kurz in z)
   // wirkten bisher wie duenne freistehende Saeulen ("Pappe") -- gleiche KANTE-Behandlung
   // wie die Wandscheibe, Stirnseiten (+z/-z) dunkler.
+  // Gesamtwand 1,50 x 3,50 m (Nutzerangabe 10.08.2026, deckt sich mit dem Spiegelmass
+  // der linken Wandscheibe Pos.9, siehe Zeile ~315: z 5,00..6,50). Vorher faelschlich
+  // an MW.z0 (5,30) ausgerichtet -- 1,03 m statt 1,50 m, ohne Beleg in der Massekette.
+  const TW = { z0: 5.00 };
   const DR = { z0: 5.45, z1: 6.15, h: 2.10 };          // lichte Öffnung
-  box(BL.x1 - BL.t, MW.z0, BL.x1, DR.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE]);
+  box(BL.x1 - BL.t, TW.z0, BL.x1, DR.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE]);
   box(BL.x1 - BL.t, DR.z1, BL.x1, BWZ.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE]);
   box(BL.x1 - BL.t, DR.z0, BL.x1, DR.z1, 3.50 - DR.h, DR.h, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE]);   // Sturz
   // Grafik "WALL WITH DOOR" (04.08.2026, ONTWERP_GALABAU_4AUG.pdf) jetzt ueber
@@ -659,7 +663,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // Runde in PROJEKT-STATUS.md fuer die genaue Herleitung).
   panel({ name: 'tuer_sturz_neu', dir: '+x', w: DR.z1 - DR.z0, h: 3.50 - DR.h, cx: BL.x1 + 0.006, cy: DR.h + (3.50 - DR.h) / 2, cz: (DR.z0 + DR.z1) / 2 });
   panel({ name: 'tuer_sturz_neu', dir: '-x', w: DR.z1 - DR.z0, h: 3.50 - DR.h, cx: BL.x1 - BL.t - 0.006, cy: DR.h + (3.50 - DR.h) / 2, cz: (DR.z0 + DR.z1) / 2 });
-  // Linkes Wandsegment (MW.z0..DR.z0, 0.15m), rechtes Segment (DR.z1..BWZ.z0,
+  // Linkes Wandsegment (TW.z0..DR.z0, 0.45m), rechtes Segment (DR.z1..BWZ.z0,
   // 0.18m) -- beide vorher nackt wsMat, jetzt Fortsetzung derselben Grafik.
   // BUGFIX (05.08.2026): urspruenglich sollte das Flammen+Tropfen-Icon vom
   // Sturz ueber die Segmentgrenze hinweg auf tuer_wand_links weiterlaufen
@@ -673,8 +677,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // jetzt das komplette Logo-Lockup zentriert und unzerschnitten auf einem
   // eigenen, vom Tuerbreiten-Massstab entkoppelten Zuschnitt, tuer_wand_links
   // ist wie tuer_wand_rechts jetzt reine Blau+Swoosh-Flaeche ohne Icon-Rest.
-  panel({ name: 'tuer_wand_links', dir: '+x', w: DR.z0 - MW.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (MW.z0 + DR.z0) / 2 });
-  panel({ name: 'tuer_wand_links', dir: '-x', w: DR.z0 - MW.z0, h: 3.50, cx: BL.x1 - BL.t - 0.006, cy: 1.75, cz: (MW.z0 + DR.z0) / 2 });
+  panel({ name: 'tuer_wand_links', dir: '+x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2 });
+  panel({ name: 'tuer_wand_links', dir: '-x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 - BL.t - 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2 });
   panel({ name: 'tuer_wand_rechts', dir: '+x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2 });
   panel({ name: 'tuer_wand_rechts', dir: '-x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 - BL.t - 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2 });
   // Türblatt, Angel an der vorderen Laibung. DOOR.setAngle(a) positioniert das
