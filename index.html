@@ -533,31 +533,32 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     color: 0xeaf6fb, roughness: 0.06, metalness: 0.05,
     transparent: true, opacity: 0.28, side: W.DoubleSide
   });
-  function flyerHalter(wallX, dir, cz, cy, id) {
-    const bw = 0.25, bh = 0.33, fh = 0.30, depth = 0.035, t = 0.018;
+  function flyerHalter(wallX, dir, cz, cy, id, parent) {
+    const bw = 0.266, bh = 0.33, fh = 0.30, depth = 0.035, t = 0.018;  // t >= 0.012m (2×SEAM_INSET), sonst kollabiert Geometrie unsichtbar
     const y0 = cy - bh / 2;
     const z0 = cz - bw / 2, z1 = cz + bw / 2;
     const back0 = dir < 0 ? wallX - t : wallX, back1 = dir < 0 ? wallX : wallX + t;
     const lip0 = dir < 0 ? wallX - depth : wallX, lip1 = dir < 0 ? wallX : wallX + depth;
     const front0 = dir < 0 ? wallX - depth : wallX + depth - t;
     const front1 = dir < 0 ? wallX - depth + t : wallX + depth;
-    box(back0, z0, back1, z1, bh, y0, acrylKlar);                 // Rückplatte, wandbündig
-    box(lip0, z0, lip1, z1, t, y0, acrylKlar);                    // Bodenlasche
-    box(front0, z0, front1, z1, fh, y0, acrylKlar);                // Vordertasche
+    const backPlate = box(back0, z0, back1, z1, bh, y0, acrylKlar, parent);  // Rückplatte, wandbündig
+    backPlate.name = id;
+    box(lip0, z0, lip1, z1, t, y0, acrylKlar, parent);                    // Bodenlasche
+    box(front0, z0, front1, z1, fh, y0, acrylKlar, parent);                // Vordertasche
     for (const s of [z0, z1 - t])
-      box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylKlar); // Seitenwangen
+      box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylKlar, parent); // Seitenwangen
   }
 
   P.w1_front = panel({ name: 'hunter_o1_main', dir: '-z', w: 3.0, h: 3.5, cx: w1c.x, cy: w1c.y, cz: W1.z0 - 0.006, num: 1 });
   P.w1_back = panel({ name: 'rainbird_o1_main', dir: '+z', w: 3.0, h: 3.5, cx: w1c.x, cy: w1c.y, cz: W1.z1 + 0.006, num: 2 });
   P.w1_left = panel({ name: 'hunter_o1_side', dir: '-x', w: 0.5, h: 3.5, cx: W1.x0 - 0.006, cy: w1c.y, cz: w1c.z, num: 3 });
   P.w1_right = panel({ name: 'rainbird_o1_side', dir: '+x', w: 0.5, h: 3.5, cx: W1.x1 + 0.006, cy: w1c.y, cz: w1c.z, num: 4 });
-  flyerHalter(3.994, -1, 0.648, 2.147, 'flyer_p3_1');
-  flyerHalter(3.994, -1, 0.648, 1.750, 'flyer_p3_2');
-  flyerHalter(3.994, -1, 0.648, 1.357, 'flyer_p3_3');
-  flyerHalter(7.006, 1, 0.650, 2.148, 'flyer_p4_1');
-  flyerHalter(7.006, 1, 0.650, 1.752, 'flyer_p4_2');
-  flyerHalter(7.006, 1, 0.650, 1.356, 'flyer_p4_3');
+  flyerHalter(3.994, -1, 0.648, 2.147, 'flyer_p3_1', wand1);
+  flyerHalter(3.994, -1, 0.648, 1.750, 'flyer_p3_2', wand1);
+  flyerHalter(3.994, -1, 0.648, 1.357, 'flyer_p3_3', wand1);
+  flyerHalter(7.006, 1, 0.650, 2.148, 'flyer_p4_1', wand1);
+  flyerHalter(7.006, 1, 0.650, 1.752, 'flyer_p4_2', wand1);
+  flyerHalter(7.006, 1, 0.650, 1.356, 'flyer_p4_3', wand1);
   [P.w1_front, P.w1_back, P.w1_left, P.w1_right].forEach(p => wand1.add(p));
 
   // --- Thekenblock: Vorderkante z 3,00, Rückwand z 6,50 (Maßkette 3,00 | 3,50 | 2,50) ---
@@ -616,9 +617,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   box(BL.x0, 5.00, BL.x0 + BL.t, 6.50, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE]);
   P.p6 = panel({ name: 'p6', dir: '-x', w: 1.0, h: 1.0, cx: BL.x0 - 0.006, cy: 0.5, cz: 3.50, num: 6 });
   P.p8 = panel({ name: 'p8', dir: '-x', w: 1.0, h: 1.4, cx: BL.x0 - 0.006, cy: 0.7, cz: 4.50, num: 8 });
-  flyerHalter(3.994, -1, 4.234, 1.198, 'flyer_p8_1');
+  // z-Werte hier 0,28m auseinander statt der urspruenglich aus den Platzhaltern
+  // gemessenen ~0,262-0,272m -- bw wuchs in der Review-Fixrunde auf 0,266m
+  // (230mm Innenbreite), wodurch die alten, engeren Abstaende zwei Halter
+  // ueberlappen liessen. Gleicher Mittelpunkt (4,506) beibehalten, nur der
+  // Abstand vergroessert.
+  flyerHalter(3.994, -1, 4.226, 1.198, 'flyer_p8_1');
   flyerHalter(3.994, -1, 4.506, 1.198, 'flyer_p8_2');
-  flyerHalter(3.994, -1, 4.768, 1.198, 'flyer_p8_3');
+  flyerHalter(3.994, -1, 4.786, 1.198, 'flyer_p8_3');
   P.p9 = panel({ name: 'p9', dir: '-x', w: 1.5, h: 3.5, cx: BL.x0 - 0.006, cy: 1.75, cz: 5.75, num: 9 });
   // Wand 9 ist Pumpenwand, der TV-Ausschnitt entfaellt (Feedback Chef, zweimal bestaetigt).
 
