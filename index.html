@@ -549,6 +549,26 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylKlar, parent); // Seitenwangen
   }
 
+  // --- Visitenkartenhalter an den 7 Kartenmarkierungen rechts der Tuer ---
+  // Vorbild: indisplay.com WBC93 (101x23x37mm, Fach 93x18mm, glasklares
+  // Acryl, Klebemontage). Gleiche Bauweise wie flyerHalter(), auf
+  // Kartengroesse verkleinert.
+  function visitenkartenHalter(wallX, dir, cz, cy, id) {
+    const bw = 0.11, bh = 0.04, fh = 0.037, depth = 0.023, t = 0.018; // t >= 0.012m (2xSEAM_INSET), sonst kollabiert Geometrie unsichtbar
+    const y0 = cy - bh / 2;
+    const z0 = cz - bw / 2, z1 = cz + bw / 2;
+    const back0 = dir < 0 ? wallX - t : wallX, back1 = dir < 0 ? wallX : wallX + t;
+    const lip0 = dir < 0 ? wallX - depth : wallX, lip1 = dir < 0 ? wallX : wallX + depth;
+    const front0 = dir < 0 ? wallX - depth : wallX + depth - t;
+    const front1 = dir < 0 ? wallX - depth + t : wallX + depth;
+    const backPlate = box(back0, z0, back1, z1, bh, y0, acrylKlar);
+    backPlate.name = id;
+    box(lip0, z0, lip1, z1, t, y0, acrylKlar);
+    box(front0, z0, front1, z1, fh, y0, acrylKlar);
+    for (const s of [z0, z1 - t])
+      box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylKlar);
+  }
+
   P.w1_front = panel({ name: 'hunter_o1_main', dir: '-z', w: 3.0, h: 3.5, cx: w1c.x, cy: w1c.y, cz: W1.z0 - 0.006, num: 1 });
   P.w1_back = panel({ name: 'rainbird_o1_main', dir: '+z', w: 3.0, h: 3.5, cx: w1c.x, cy: w1c.y, cz: W1.z1 + 0.006, num: 2 });
   P.w1_left = panel({ name: 'hunter_o1_side', dir: '-x', w: 0.5, h: 3.5, cx: W1.x0 - 0.006, cy: w1c.y, cz: w1c.z, num: 3 });
@@ -720,6 +740,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // ist wie tuer_wand_rechts jetzt reine Blau+Swoosh-Flaeche ohne Icon-Rest.
   panel({ name: 'tuer_wand_links', dir: '+x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2 });
   panel({ name: 'tuer_wand_links', dir: '-x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 - BL.t - 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2 });
+  // Visitenkartenhalter an den 7 Kartenmarkierungen aus tuer_wand_links.jpg
+  // (Welt-X=7.00 = BL.x1, Welt-Z=5.385 konstant, siehe 2026-08-12-visitenkarten-doppeldruck-option3-plan.md)
+  visitenkartenHalter(7.00, 1, 5.385, 1.707, 'karte_1');
+  visitenkartenHalter(7.00, 1, 5.385, 1.585, 'karte_2');
+  visitenkartenHalter(7.00, 1, 5.385, 1.466, 'karte_3');
+  visitenkartenHalter(7.00, 1, 5.385, 1.348, 'karte_4');
+  visitenkartenHalter(7.00, 1, 5.385, 1.229, 'karte_5');
+  visitenkartenHalter(7.00, 1, 5.385, 1.112, 'karte_6');
+  visitenkartenHalter(7.00, 1, 5.385, 0.993, 'karte_7');
   panel({ name: 'tuer_wand_rechts', dir: '+x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2 });
   panel({ name: 'tuer_wand_rechts', dir: '-x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 - BL.t - 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2 });
   // Türblatt, Angel an der vorderen Laibung. DOOR.setAngle(a) positioniert das
