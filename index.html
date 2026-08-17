@@ -1111,30 +1111,73 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   waermepumpeEinheit(7.469, 6.015, 'waermepumpe_1');
 
-  // --- DAB Esybox / Esybox Mini: vereinfachter Boxkoerper (wie kreiselpumpe()/
-  // waermepumpeEinheit()), Frontflaeche (-z, zum Gang) traegt das Produktfoto als
-  // Textur -- selbes Muster wie die Mooswand (mossMat auf Materialindex 5 im
-  // box()-Array, siehe Zeile ~504). Masse aus "new objects/dab esybox
-  // measurements.txt" (H=0,352 W=0,263) bzw. "...mini meassurents.txt" (H=0,236
-  // W=0,263); Tiefe nicht in den Messdateien enthalten (das dortige "L" wirkt
-  // fuer eine reine Bautiefe unplausibel gross), 0,30m/0,28m als Naeherung ans
-  // Referenzfoto angenommen -- per Nutzer-Feedback anpassbar.
-  const esyboxGruen = GREY(0x1f5c33, 0.48), esyboxDunkel = GREY(0x1a1c1e, 0.55);
-  const esyboxMat = name => new W.MeshStandardMaterial({ map: tex(name), roughness: 0.55 });
-  function esyboxEinheit(x0, z0, w, d, h, texName, id) {
+  // --- DAB Esybox / Esybox Mini: echte Mehrteil-Modelle (wie kreiselpumpe()/
+  // poolroboter()), keine Box mit Foto drauf. Masse aus "new objects/dab esybox
+  // measurements.txt" bzw. "...mini meassurents.txt". Bei der grossen Esybox
+  // liegt "L" (564mm) in der Draufsicht horizontal -- das Geraet ist kein
+  // Turm, sondern ein liegender, keilfoermiger Tankkoerper (H=352 nur an der
+  // hohen Frontkopf-Seite) mit sich nach hinten absenkendem Dach, siehe
+  // Seitenansicht in "dab esybox viewmodel.webp". Bei der Mini steht "L" in
+  // der Seitenansicht VERTIKAL (turmfoermig wie auf dem Foto), fehlt aber in
+  // der Messdatei -- H=236 bleibt die primaere Hoehenreferenz.
+  const esyboxGruen = GREY(0x1f5c33, 0.48), esyboxDunkel = GREY(0x17191b, 0.55),
+    esyboxGrau = GREY(0x7d827e, 0.5), esyboxSchwarz = GREY(0x0e0f10, 0.6);
+  function esyboxFuss(cx, cz, parent) {
+    const f = new W.Mesh(new W.CylinderGeometry(0.012, 0.014, 0.012, 10), esyboxSchwarz);
+    f.position.set(cx, 0.006, cz); f.castShadow = true; parent.add(f);
+  }
+  function esyboxPort(cx, cz, r, topY, parent) {
+    const p = new W.Mesh(new W.CylinderGeometry(r, r, 0.03, 16), esyboxSchwarz);
+    p.position.set(cx, topY - 0.015, cz); p.castShadow = true; p.receiveShadow = true; parent.add(p);
+  }
+  // Grosse Esybox: liegender Tankkoerper (0..L in x, 0..W in z) + hoher
+  // Kopf am vorderen Ende (-z-Seite = Gangseite) mit Bedienfeld und
+  // gewoelbter dunkler Haube (Kuppel-Technik wie poolroboter()-haube).
+  function esyboxEinheit(x0, z0, id) {
+    const L = 0.564, W_ = 0.263, H = 0.352;
     const g = new W.Group(); g.position.set(x0, 0, z0); props.add(g);
-    const baseH = h * 0.10, hoodH = h * 0.16, bodyH = h - baseH - hoodH;
-    box(0, 0, w, d, baseH, 0, esyboxDunkel, g);                              // Sockel
-    box(0, 0, w, d, bodyH, baseH,
-      [esyboxGruen, esyboxGruen, esyboxGruen, esyboxGruen, esyboxGruen, esyboxMat(texName)], g);  // Korpus, Front = Produktfoto
-    box(0, 0, w, d, hoodH, baseH + bodyH, esyboxDunkel, g);                  // Haube oben
-    registerDraggable(id, g, 0, undefined, { x: w / 2, z: d / 2, r: Math.max(w, d) / 2 + 0.05 });
+    const tankH = H * 0.52, headL = L * 0.40, headH = H * 0.90;
+    box(0, 0, L, W_, tankH, 0, esyboxGruen, g);                                   // liegender Tankkoerper
+    box(0, 0, headL, W_, headH, tankH, esyboxGruen, g);                           // hoher Kopf vorn
+    const kuppel = new W.Mesh(new W.SphereGeometry(headL * 0.34, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), esyboxDunkel);
+    kuppel.position.set(headL * 0.5, tankH + headH - 0.005, W_ / 2);
+    kuppel.scale.set(1, 0.6, (W_ * 0.9) / (headL * 0.68));
+    kuppel.castShadow = true; kuppel.receiveShadow = true; g.add(kuppel);
+    box(0, 0, L, W_, H * 0.05, 0, esyboxDunkel, g);                               // dunkler Sockelstreifen
+    // Bedienfeld auf der Kopf-Frontflaeche (-z): dunkles Feld + helles
+    // "Bildschirm"-Rechteck, wie steleEinheit()'s Bildschirmrahmen-Technik.
+    box(headL * 0.30, -0.006, headL * 0.86, 0, headH * 0.55, tankH + headH * 0.20, esyboxSchwarz, g);
+    box(headL * 0.36, -0.010, headL * 0.80, -0.005, headH * 0.34, tankH + headH * 0.28, GREY(0x9fae9a, 0.25), g); // Display
+    // Lamellen seitlich am Tankkoerper (Kuehlluft), Referenz: Schlitzreihen im
+    // Boden-/Seitenriss.
+    for (let i = 0; i < 6; i++)
+      box(headL + 0.03 + i * 0.028, W_ - 0.012, headL + 0.045 + i * 0.028, W_ + 0.002, tankH * 0.55, tankH * 0.25, esyboxDunkel, g);
+    esyboxPort(headL * 0.55, W_ * 0.42, 0.028, 0, g);                             // OUT
+    esyboxPort(headL * 0.55, W_ * 0.68, 0.024, 0, g);                             // IN
+    for (const [fx, fz] of [[0.03, 0.03], [L - 0.03, 0.03], [0.03, W_ - 0.03], [L - 0.03, W_ - 0.03]]) esyboxFuss(fx, fz, g);
+    registerDraggable(id, g, 0, undefined, { x: L / 2, z: W_ / 2, r: Math.max(L, W_) / 2 + 0.05 });
   }
-  function mat(name) {
-    return new W.MeshStandardMaterial({ map: tex(name), roughness: 0.55 });
+  // Esybox Mini: turmfoermig, Korpus in Grau mit gruenem Bedienfeld-Einsatz
+  // vorn (Referenzfoto), gewoelbte Haube oben, zwei gleich grosse Bodenports.
+  function esyboxMiniEinheit(x0, z0, id) {
+    const H = 0.236, W_ = 0.263, D = 0.25;
+    const g = new W.Group(); g.position.set(x0, 0, z0); props.add(g);
+    const domeH = H * 0.16, bodyH = H - domeH;
+    box(0, 0, W_, D, bodyH, 0, [esyboxGrau, esyboxGrau, esyboxGrau, esyboxGrau, esyboxGruen, esyboxGrau], g);  // Korpus, Front (+z, Materialindex 4) = gruenes Bedienfeld
+    const kuppel = new W.Mesh(new W.SphereGeometry(W_ * 0.33, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), esyboxGrau);
+    kuppel.position.set(W_ / 2, bodyH - 0.005, D / 2);
+    kuppel.scale.set(1, 0.6, (D * 0.9) / (W_ * 0.66));
+    kuppel.castShadow = true; kuppel.receiveShadow = true; g.add(kuppel);
+    box(W_ * 0.50, D - 0.006, W_ * 0.86, D + 0.002, bodyH * 0.42, bodyH * 0.30, esyboxSchwarz, g);            // Bildschirmrahmen
+    box(W_ * 0.56, D + 0.002, W_ * 0.80, D + 0.008, bodyH * 0.24, bodyH * 0.42, GREY(0x9fae9a, 0.25), g);      // Display
+    box(W_ * 0.10, D - 0.006, W_ * 0.42, D + 0.002, bodyH * 0.30, bodyH * 0.42, esyboxGrau, g);                // blanke Zugangsplatte links
+    esyboxPort(W_ * 0.30, D * 0.90, 0.026, 0, g);
+    esyboxPort(W_ * 0.66, D * 0.90, 0.026, 0, g);
+    for (const [fx, fz] of [[0.025, 0.025], [W_ - 0.025, 0.025], [0.025, D - 0.025], [W_ - 0.025, D - 0.025]]) esyboxFuss(fx, fz, g);
+    registerDraggable(id, g, 0, undefined, { x: W_ / 2, z: D / 2, r: Math.max(W_, D) / 2 + 0.05 });
   }
-  esyboxEinheit(3.000, 4.478, 0.263, 0.30, 0.352, 'esybox', 'esybox_1');
-  esyboxEinheit(10.470, 5.000, 0.263, 0.28, 0.236, 'esybox_mini', 'esybox_mini_1');
+  esyboxEinheit(3.000, 4.478, 'esybox_1');
+  esyboxMiniEinheit(10.470, 5.000, 'esybox_mini_1');
 
   // --- Elbe-Konstrukt nach Foto elbe1: Europalette mit sichtbaren Latten, dünne
   // Bodenplatten, zwei Sperrholzwände mit aufgedoppeltem Deckbrett und blauer
