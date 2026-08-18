@@ -1806,13 +1806,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // Drehung und der Außerhalb-ausblenden-Status auch für sie greifen, statt
     // immer auf die obigen Default-Koordinaten und "sichtbar" zurückzufallen.
     loadState();
-    // Gleiches Problem trifft den DEFAULT_STATE-Stand (18.08.2026): beim ersten
-    // Anwenden ganz am Skriptende sind die vier Personen noch nicht in
-    // DRAGGABLE, ihre person_N-Eintraege werden dort also stillschweigend
-    // uebersprungen und faelschlich OHNE Personen-Positionen persistiert. Bei
-    // frischem Browser (kein eigener gespeicherter Stand) hier ein zweites Mal
-    // anwenden + neu persistieren, jetzt mit registrierten Personen.
-    if (!HAD_SAVED_STATE) { applyState(DEFAULT_STATE, false); persistState(); }
+    // Gleiches Problem trifft DEFAULT_STATE (siehe applyDefaultsForMissing()):
+    // beim ersten Anwenden ganz am Skriptende sind die vier Personen noch
+    // nicht in DRAGGABLE, ihre person_N-Eintraege wuerden dort also
+    // uebersprungen. Hier ein zweites Mal anwenden, jetzt mit registrierten
+    // Personen -- persist=true, dies ist der massgebliche, endgueltige Stand
+    // fuer diesen Seitenaufruf.
+    applyDefaultsForMissing(DEFAULT_STATE, true);
     applyHideOutside(document.getElementById('tHideOutside').checked);
   }).catch(err => console.error('low poly guy.stl konnte nicht geladen werden:', err));
 
@@ -2082,6 +2082,36 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const wasOldVersion = !data.version || data.version < 2;
     applyState(data, false);
     if (wasOldVersion) persistState();   // Migration dauerhaft schreiben, nicht bei jedem Laden neu ausführen
+  }
+  // Ergänzung zum bisherigen "nur bei ganz frischem Browser"-Verhalten
+  // (18.08.2026): DEFAULT_STATE wurde bisher nur angewendet, wenn der Browser
+  // ÜBERHAUPT noch keinen eigenen gespeicherten Stand hatte (!HAD_SAVED_STATE)
+  // -- sobald irgendetwas gespeichert war (auch nur eine einzige verschobene
+  // Person), griff DEFAULT_STATE nie wieder, selbst für Objekte, die zum
+  // Speicherzeitpunkt noch gar nicht existierten (z.B. der Flyerständer aus
+  // einer späteren Runde) oder deren Default-Position sich seither geändert
+  // hat (z.B. die Esyboxen). Ergebnis: neue/aktualisierte Standardpositionen
+  // kamen bei bereits aktiven Browsern (u.a. dem des Nutzers selbst) nie an,
+  // "Positionen exportieren" exportierte dort weiterhin die alten/fehlenden
+  // Werte. Fix: bei JEDEM Laden zusätzlich zu loadState() aufgerufen, wendet
+  // aus data.positions/.groups NUR die IDs an, die im tatsächlich gespeicherten
+  // Stand (nicht im Laufzeit-DRAGGABLE, das würde auch hartkodierte
+  // Default-Koordinaten faelschlich als "schon gespeichert" zählen) noch
+  // fehlen -- bereits von Nutzern verschobene/individualisierte Objekte
+  // bleiben unangetastet, neue oder in DEFAULT_STATE aktualisierte Objekte
+  // werden nachgezogen. persist=false am ersten Aufrufpunkt (vor den
+  // asynchron ladenden Standbesuchern, siehe dort), persist=true am zweiten.
+  function applyDefaultsForMissing(data, persist) {
+    let raw;
+    try { raw = JSON.parse(localStorage.getItem('mockupArrangement')); } catch (e) { raw = null; }
+    const savedPosIds = new Set(Object.keys((raw && raw.positions) || {}));
+    const savedGroupIds = new Set(Object.keys((raw && raw.groups) || {}));
+    const toApply = { version: STATE_VERSION, positions: {}, groups: {} };
+    for (const [id, p] of Object.entries(data.positions || {})) if (!savedPosIds.has(id)) toApply.positions[id] = p;
+    for (const [gid, gd] of Object.entries(data.groups || {})) if (!savedGroupIds.has(gid)) toApply.groups[gid] = gd;
+    if (!Object.keys(toApply.positions).length && !Object.keys(toApply.groups).length) return;
+    applyState(toApply, false);
+    if (persist) persistState();
   }
   // Mehrere benannte Layouts, unabhängig vom automatischen Stand oben — überschreiben
   // sich nicht gegenseitig, jedes hat seinen eigenen Namen als Schlüssel.
@@ -2691,12 +2721,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   // Sichtbarkeit ist bereits über bindLayer() oben mit dem tatsächlichen
   // checked-Zustand der Häkchen im Optionen-Panel abgeglichen.
-  // Neuer Standard-Stand (Export vom Nutzer übernommen, 18.08.2026, "final
-  // positionen.json" -- loest den kleineren Default aus Runde vom 04.08.2026
-  // ab, der nur die zwei Gruppen ohne Positionen enthielt): wird nur
-  // angewendet, wenn diese Browser-Instanz noch keinen eigenen gespeicherten
-  // Stand hat -- ein bereits gespeicherter Nutzerstand (localStorage) hat
-  // weiterhin Vorrang und wird nicht überschrieben.
+  // Standard-Stand (Export vom Nutzer übernommen, 18.08.2026, "final
+  // positionen.json", seither um neue Objekte ergänzt). Wird über
+  // applyDefaultsForMissing() angewendet -- NICHT mehr nur bei ganz frischem
+  // Browser: bereits von Nutzern verschobene/individualisierte Objekte
+  // bleiben unangetastet (deren ID steht schon im gespeicherten Stand), aber
+  // IDs, die im gespeicherten Stand fehlen (neu hinzugekommene Objekte wie
+  // der Flyerständer, oder Objekte aus einer Session von vor der letzten
+  // DEFAULT_STATE-Aktualisierung), werden trotzdem nachgezogen. Siehe
+  // ausführliche Begründung beim Fund dieses Problems in PROJEKT-STATUS.md.
   const DEFAULT_STATE = {
     "version": 2,
     "positions": {
@@ -2736,19 +2769,22 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       "person_1": { "x": 9.83062882495021, "z": 3.6762900370133673, "ry": 2.5 },
       "person_2": { "x": 3.4188892119922727, "z": 2.324139054605143, "ry": -5.6179999999999986 },
       "person_3": { "x": 2.393840890562892, "z": 7.289602560926431, "ry": 3.899999999999999 },
-      "person_4": { "x": 10.287830894461441, "z": 6.498310836170152, "ry": -0.8999999999999999 }
+      "person_4": { "x": 10.287830894461441, "z": 6.498310836170152, "ry": -0.8999999999999999 },
+      "flyerstaender_vertikal_1": { "x": 9.45, "z": 4.80, "ry": 0 }
     },
     "groups": {
       "g1": { "name": "Poolroboter", "memberIds": ["robo_1", "robo_3", "robo_2"], "visible": true },
       "g2": { "name": "Pumpen", "memberIds": ["pumpe_3", "pumpe_4", "pumpe_2", "pumpe_1"], "visible": true }
     }
   };
-  const HAD_SAVED_STATE = !!localStorage.getItem('mockupArrangement');
   loadState();
-  if (!HAD_SAVED_STATE) {
-    applyState(DEFAULT_STATE, false);
-    persistState();
-  }
+  // persist=false hier: die vier Standbesucher sind an dieser Stelle noch
+  // nicht geladen (asynchron, siehe applyDefaultsForMissing()-Aufruf im
+  // Personen-Ladepfad weiter oben), ein Persistieren jetzt würde deren
+  // Positionen aus einem evtl. schon vorhandenen gespeicherten Stand
+  // stillschweigend aus localStorage entfernen. Der zweite, persistierende
+  // Aufruf nach dem Personen-Laden ist maßgeblich.
+  applyDefaultsForMissing(DEFAULT_STATE, false);
   applyHideOutside(document.getElementById('tHideOutside').checked);
   renderLayoutsList();
   updateModeHint();
