@@ -222,7 +222,7 @@
     <div class="row">
       <label><input type="checkbox" id="tProps" checked> Ausstattung</label>
       <label><input type="checkbox" id="tGrid"> Bodenraster</label>
-      <label><input type="checkbox" id="tPpl"> Standbesucher</label>
+      <label><input type="checkbox" id="tPpl" checked> Standbesucher</label>
       <label><input type="checkbox" id="tCol"> Hallensäule</label>
       <label><input type="checkbox" id="tRoof" checked> Lamellendach</label>
       <label><input type="checkbox" id="tNum"> Positionsnummern</label>
@@ -1764,6 +1764,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // Drehung und der Außerhalb-ausblenden-Status auch für sie greifen, statt
     // immer auf die obigen Default-Koordinaten und "sichtbar" zurückzufallen.
     loadState();
+    // Gleiches Problem trifft den DEFAULT_STATE-Stand (18.08.2026): beim ersten
+    // Anwenden ganz am Skriptende sind die vier Personen noch nicht in
+    // DRAGGABLE, ihre person_N-Eintraege werden dort also stillschweigend
+    // uebersprungen und faelschlich OHNE Personen-Positionen persistiert. Bei
+    // frischem Browser (kein eigener gespeicherter Stand) hier ein zweites Mal
+    // anwenden + neu persistieren, jetzt mit registrierten Personen.
+    if (!HAD_SAVED_STATE) { applyState(DEFAULT_STATE, false); persistState(); }
     applyHideOutside(document.getElementById('tHideOutside').checked);
   }).catch(err => console.error('low poly guy.stl konnte nicht geladen werden:', err));
 
@@ -2642,20 +2649,62 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   // Sichtbarkeit ist bereits über bindLayer() oben mit dem tatsächlichen
   // checked-Zustand der Häkchen im Optionen-Panel abgeglichen.
-  // Neuer Standard-Stand (Export vom Nutzer übernommen, 04.08.2026): Gruppen
-  // "Poolroboter"/"Pumpen" nur anlegen, wenn diese Browser-Instanz noch keinen
-  // eigenen gespeicherten Stand hat -- ein bereits gespeicherter Nutzerstand
-  // (localStorage) hat weiterhin Vorrang und wird nicht überschrieben.
+  // Neuer Standard-Stand (Export vom Nutzer übernommen, 18.08.2026, "final
+  // positionen.json" -- loest den kleineren Default aus Runde vom 04.08.2026
+  // ab, der nur die zwei Gruppen ohne Positionen enthielt): wird nur
+  // angewendet, wenn diese Browser-Instanz noch keinen eigenen gespeicherten
+  // Stand hat -- ein bereits gespeicherter Nutzerstand (localStorage) hat
+  // weiterhin Vorrang und wird nicht überschrieben.
+  const DEFAULT_STATE = {
+    "version": 2,
+    "positions": {
+      "waermepumpe_1": { "x": 7.469, "z": 6.015, "ry": 0 },
+      "esybox_1": { "x": 3.94418349001292, "z": 4.266535711670035, "ry": 4.799999999999999 },
+      "esybox_mini_1": { "x": 10.283561580570506, "z": 2.5721436992934166, "ry": 6.299999999999998 },
+      "lounge_1_tisch": { "x": 8.930653980712206, "z": 2.21453881491992, "ry": 0 },
+      "lounge_1_stuhl_1": { "x": 8.323563863315657, "z": 1.4664007943332997, "ry": 3.7415926535897928 },
+      "lounge_1_stuhl_2": { "x": 9.745767875169076, "z": 2.253513164509444, "ry": 1.5 },
+      "lounge_1_stuhl_3": { "x": 9.405713783748045, "z": 1.2919331173200932, "ry": -3.6707963267948958 },
+      "lounge_1_stuhl_4": { "x": 10.153353533571298, "z": -5, "ry": 3.070796326794896 },
+      "steh_1_tisch": { "x": 1.562, "z": 1.817, "ry": 0 },
+      "steh_1_hocker_1": { "x": 2.1020000000000003, "z": 1.817, "ry": 0 },
+      "steh_1_hocker_2": { "x": 1.022, "z": 1.817, "ry": 0 },
+      "steh_1_hocker_3": { "x": 1.562, "z": 2.357, "ry": 0 },
+      "steh_1_hocker_4": { "x": 1.562, "z": 1.277, "ry": 0 },
+      "steh_2_tisch": { "x": 4.489, "z": -0.662, "ry": 0 },
+      "steh_2_hocker_1": { "x": 5.429736605389641, "z": -0.662, "ry": 0 },
+      "steh_2_hocker_2": { "x": 3.5482633946103586, "z": -0.662, "ry": 0 },
+      "steh_2_hocker_3": { "x": 4.489, "z": 0.2787366053896413, "ry": 0 },
+      "steh_2_hocker_4": { "x": 4.489, "z": -1.6027366053896412, "ry": 0 },
+      "steh_3_tisch": { "x": 1.3258482516516867, "z": 4.001614385347364, "ry": 0 },
+      "steh_3_hocker_1": { "x": 1.8978482516516868, "z": 4.001614385347364, "ry": 0 },
+      "steh_3_hocker_2": { "x": 0.7538482516516867, "z": 4.001614385347364, "ry": 0 },
+      "steh_3_hocker_3": { "x": 1.3258482516516867, "z": 4.573614385347366, "ry": 0 },
+      "steh_3_hocker_4": { "x": 1.3258482516516867, "z": 3.4296143853473637, "ry": 0 },
+      "technik_1": { "x": 8.478, "z": 6.604, "ry": 0 },
+      "robo_1": { "x": 3.995993970693589, "z": 8.477105628200178, "ry": 0 },
+      "robo_2": { "x": 3.9839444827678197, "z": 7.848779325863949, "ry": 0 },
+      "robo_3": { "x": 3.9781373847972015, "z": 7.214293126396929, "ry": 0 },
+      "display_1": { "x": 0.2568439692602569, "z": 0.6454742649885339, "ry": 7.211999999999998 },
+      "blumenkasten": { "x": 7.907, "z": 0.347, "ry": 0 },
+      "pumpe_1": { "x": 1.4801411064069656, "z": 5.744441667861678, "ry": 0 },
+      "pumpe_2": { "x": 0.9422242687145728, "z": 5.750947304724233, "ry": 0 },
+      "pumpe_3": { "x": 1.4867848204890075, "z": 6.281316167440834, "ry": 0 },
+      "pumpe_4": { "x": 0.9446282006080509, "z": 6.282252071017441, "ry": 0 },
+      "person_1": { "x": 9.83062882495021, "z": 3.6762900370133673, "ry": 2.5 },
+      "person_2": { "x": 3.4188892119922727, "z": 2.324139054605143, "ry": -5.6179999999999986 },
+      "person_3": { "x": 2.393840890562892, "z": 7.289602560926431, "ry": 3.899999999999999 },
+      "person_4": { "x": 10.287830894461441, "z": 6.498310836170152, "ry": -0.8999999999999999 }
+    },
+    "groups": {
+      "g1": { "name": "Poolroboter", "memberIds": ["robo_1", "robo_3", "robo_2"], "visible": true },
+      "g2": { "name": "Pumpen", "memberIds": ["pumpe_3", "pumpe_4", "pumpe_2", "pumpe_1"], "visible": true }
+    }
+  };
   const HAD_SAVED_STATE = !!localStorage.getItem('mockupArrangement');
   loadState();
   if (!HAD_SAVED_STATE) {
-    applyState({
-      version: 2,
-      groups: {
-        g1: { name: 'Poolroboter', memberIds: ['robo_1', 'robo_3', 'robo_2'], visible: true },
-        g2: { name: 'Pumpen', memberIds: ['pumpe_3', 'pumpe_4', 'pumpe_2', 'pumpe_1'], visible: true }
-      }
-    }, false);
+    applyState(DEFAULT_STATE, false);
     persistState();
   }
   applyHideOutside(document.getElementById('tHideOutside').checked);
