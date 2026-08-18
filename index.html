@@ -575,6 +575,47 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylKlar);
   }
 
+  // --- Vertikaler Flyerständer (freistehend, Boden) ---
+  // Nach "new objects/vertikaler flyerständer meassurements.jpg" (Bemaßung)
+  // und "...fylerständer.jpg" (Foto): schräg nach hinten geneigte Metall-
+  // Rückenspine auf rechteckiger Fußplatte, 6 gestufte A4-Fächer im oberen
+  // Teil der Spine, unterer Teil der Spine blank (kein Fach). H=1,28 / W=0,28
+  // (Fußplatte) bzw. 0,22 (Fach-Innenbreite) / D=0,41 (Fußplatte-Tiefe),
+  // Neigung aus der Seitenansicht grob geschätzt (~16° aus der Senkrechten),
+  // "Wirkung vor Millimeter-Treue" wie beim Rest des Modells. Bauweise wie
+  // kreiselpumpe()/DOOR-Blatt: eigene rotierte Untergruppe fürs geneigte
+  // Bauteil, Kinder darin in spinen-lokalen statt Welt-Koordinaten.
+  function flyerstaenderVertikal(x0, z0, id) {
+    const W_ = 0.28, D = 0.41, H = 1.28, footH = 0.015, lean = 0.28;
+    const g = new W.Group(); g.position.set(x0, 0, z0); props.add(g);
+    const metall = GREY(0xb8bac0, 0.42), papier = GREY(0xf2f1ec, 0.85), dunkel = GREY(0x4a4c4e, 0.5);
+    box(0, 0, W_, D, footH, 0, metall, g);                                    // Fußplatte
+    const spineLen = H / Math.cos(lean), spineW = 0.22, spineT = 0.012;
+    const spine = new W.Group();
+    spine.position.set(W_ / 2, footH, 0.05);
+    spine.rotation.x = lean;
+    g.add(spine);
+    const spinePanel = new W.Mesh(new W.BoxGeometry(spineW, spineLen, spineT), metall);
+    spinePanel.position.set(0, spineLen / 2, -spineT / 2);
+    spinePanel.castShadow = true; spinePanel.receiveShadow = true;
+    spine.add(spinePanel);
+    // 6 Papier-Einlagen + Ablage-Lippen, gleichmäßig über die oberen ~65%
+    // der Schräglänge verteilt (untere ~35% bleiben fachlos, siehe Foto).
+    const pocketsStart = spineLen * 0.35, pocketsSpan = spineLen - pocketsStart, n = 6, step = pocketsSpan / n;
+    for (let i = 0; i < n; i++) {
+      const yLocal = pocketsStart + (i + 0.5) * step;
+      const paper = new W.Mesh(new W.BoxGeometry(spineW - 0.03, step * 0.82, 0.004), papier);
+      paper.position.set(0, yLocal, 0.012);
+      paper.castShadow = true; spine.add(paper);
+      const lip = new W.Mesh(new W.BoxGeometry(spineW, 0.014, 0.05), dunkel);
+      lip.position.set(0, yLocal - step * 0.45, 0.03);
+      lip.castShadow = true; spine.add(lip);
+    }
+    registerDraggable(id, g, 0, undefined, { x: W_ / 2, z: D / 2, r: Math.max(W_, D) / 2 + 0.05 });
+  }
+  // Aufruf erst weiter unten (siehe esyboxEinheit()) -- props ist als const
+  // erst dort schon initialisiert (temporal dead zone hier noch).
+
   P.w1_front = panel({ name: 'hunter_o1_main', dir: '-z', w: 3.0, h: 3.5, cx: w1c.x, cy: w1c.y, cz: W1.z0 - 0.006, num: 1 });
   P.w1_back = panel({ name: 'rainbird_o1_main', dir: '+z', w: 3.0, h: 3.5, cx: w1c.x, cy: w1c.y, cz: W1.z1 + 0.006, num: 2 });
   P.w1_left = panel({ name: 'hunter_o1_side', dir: '-x', w: 0.5, h: 3.5, cx: W1.x0 - 0.006, cy: w1c.y, cz: w1c.z, num: 3 });
@@ -1200,6 +1241,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   esyboxEinheit(3.000, 4.478, 'esybox_1');
   esyboxMiniEinheit(10.470, 5.000, 'esybox_mini_1');
+  flyerstaenderVertikal(9.45, 4.80, 'flyerstaender_vertikal_1');
 
   // --- Elbe-Konstrukt nach Foto elbe1: Europalette mit sichtbaren Latten, dünne
   // Bodenplatten, zwei Sperrholzwände mit aufgedoppeltem Deckbrett und blauer
