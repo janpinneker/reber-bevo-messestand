@@ -558,7 +558,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // Vorbild: indisplay.com WBC93 (101x23x37mm, Fach 93x18mm, glasklares
   // Acryl, Klebemontage). Gleiche Bauweise wie flyerHalter(), auf
   // Kartengroesse verkleinert.
-  function visitenkartenHalter(wallX, dir, cz, cy, id) {
+  function visitenkartenHalter(wallX, dir, cz, cy, id, parent) {
     const bw = 0.11, bh = 0.04, fh = 0.037, depth = 0.023, t = 0.018; // t >= 0.012m (2xSEAM_INSET), sonst kollabiert Geometrie unsichtbar
     const y0 = cy - bh / 2;
     const z0 = cz - bw / 2, z1 = cz + bw / 2;
@@ -566,12 +566,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const lip0 = dir < 0 ? wallX - depth : wallX, lip1 = dir < 0 ? wallX : wallX + depth;
     const front0 = dir < 0 ? wallX - depth : wallX + depth - t;
     const front1 = dir < 0 ? wallX - depth + t : wallX + depth;
-    const backPlate = box(back0, z0, back1, z1, bh, y0, acrylKlar);
+    const backPlate = box(back0, z0, back1, z1, bh, y0, acrylKlar, parent);
     backPlate.name = id;
-    box(lip0, z0, lip1, z1, t, y0, acrylKlar);
-    box(front0, z0, front1, z1, fh, y0, acrylKlar);
+    box(lip0, z0, lip1, z1, t, y0, acrylKlar, parent);
+    box(front0, z0, front1, z1, fh, y0, acrylKlar, parent);
     for (const s of [z0, z1 - t])
-      box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylKlar);
+      box(dir < 0 ? wallX - depth : wallX, s, dir < 0 ? wallX : wallX + depth, s + t, fh, y0, acrylKlar, parent);
   }
 
   // --- Vertikaler Flyerständer (freistehend, Boden) ---
@@ -869,9 +869,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // (BWZ.z0-Seite), 12cm an der Mooswand-Seite (TW.z0-Seite). Rechtes Ende
   // bleibt an BWZ.z0 verankert (strukturelle Ecke zur Rueckwand), von dort aus
   // mit den drei Segmentbreiten nach links aufgebaut.
+  // NACHTRAG (19.08.2026): mit dieser Zuordnung liegt die Tuer bei z
+  // 4,92..5,72 -- das umschliesst komplett die Mooswand (MW, z 5,30..5,42,
+  // siehe weiter unten), die Tuer wuerde also durch die Mooswand hindurch
+  // oeffnen. Bei der vorigen Zuordnung lag die Tuer bei z 5,41..6,21 und
+  // beruehrte die Mooswand nur an der oberen Kante (5,41 vs. 5,42) -- real
+  // baubar, diese Variante aber nicht. Auf Nutzerwunsch bleibt diese neue
+  // Zuordnung trotzdem als Referenz/Vergleich stehen (Option 2, sichtbar in
+  // der Gruppe `tuerNeu`), waehrend Option 1 die vorige, tatsaechlich baubare
+  // Anordnung zeigt (Gruppe `tuerAlt`, weiter unten nach diesem Block).
   const DR = { z1: BWZ.z0 - 0.61, h: 1.92 };
   DR.z0 = DR.z1 - 0.80;                                 // lichte Öffnung, 0,80m breit
   const TW = { z0: DR.z0 - 0.12 };
+  const tuerNeu = new W.Group(); root.add(tuerNeu);     // Option 2 (siehe setOption)
   // Task C (14.08.2026, schwarzer Strich rechts/oberhalb der Tuer): live per
   // Raycasting + gezieltem Ein-/Ausblenden lokalisiert und bestaetigt -- an der
   // Nahtstelle tuer_wand_links/Sturz (z=DR.z0) liegen die beiden KANTE-Stirnflaechen
@@ -891,9 +901,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // bei flachem Winkel erscheint dadurch als unauffaelliger Farbuebergang statt als
   // schwarzer Strich. Siehe 2026-08-12-tuerwand-nachbesserung-podest-plan.md.
   const KANTE_SEAM_DRz0 = new W.MeshStandardMaterial({ color: BLUE, roughness: 0.66 });
-  box(BL.x1 - BL.t, TW.z0, BL.x1, DR.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE_SEAM_DRz0, KANTE]);
-  box(BL.x1 - BL.t, DR.z1, BL.x1, BWZ.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE]);
-  box(BL.x1 - BL.t, DR.z0, BL.x1, DR.z1, 3.50 - DR.h, DR.h, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE_SEAM_DRz0]);   // Sturz
+  box(BL.x1 - BL.t, TW.z0, BL.x1, DR.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE_SEAM_DRz0, KANTE], tuerNeu);
+  box(BL.x1 - BL.t, DR.z1, BL.x1, BWZ.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE], tuerNeu);
+  box(BL.x1 - BL.t, DR.z0, BL.x1, DR.z1, 3.50 - DR.h, DR.h, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE_SEAM_DRz0], tuerNeu);   // Sturz
   // Grafik "WALL WITH DOOR" (04.08.2026, ONTWERP_GALABAU_4AUG.pdf) jetzt ueber
   // die GANZE Wand verteilt statt nur auf dem Sturz: praezise vermessen (PDF-
   // Innenbox = Tuerblatt-Inhalt, Aussenbox = ganze Wand), die Innenbox-Hoehe
@@ -902,7 +912,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // Tuerbreite (0.70m = gemessene Innenbox-Breite), dieselbe Skala fuer die
   // beiden schmalen Seitensegmente verwendet (siehe Sechzehnte/Siebzehnte
   // Runde in PROJEKT-STATUS.md fuer die genaue Herleitung).
-  P.sturz = panel({ name: 'tuer_sturz_neu', dir: '+x', w: DR.z1 - DR.z0, h: 3.50 - DR.h, cx: BL.x1 + 0.006, cy: DR.h + (3.50 - DR.h) / 2, cz: (DR.z0 + DR.z1) / 2 });
+  P.sturz = panel({ name: 'tuer_sturz_neu', dir: '+x', w: DR.z1 - DR.z0, h: 3.50 - DR.h, cx: BL.x1 + 0.006, cy: DR.h + (3.50 - DR.h) / 2, cz: (DR.z0 + DR.z1) / 2, parent: tuerNeu });
   // Innenseite (Pool-/Lagerseite) bekommt bewusst KEIN Panel mehr -- analog
   // tuer_wand_links-Innenseite (Runde 29, siehe Kommentar unten): zeigte bisher
   // dieselbe Kundengrafik gespiegelt ("doppelt bedruckt"). Task D, 2026-08-12-
@@ -927,7 +937,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // zentrierten Kartenhalter-Markern (Korrektur 17.08.2026, dritte Runde);
   // tuer_wand_links.jpg zeigt die 7 grauen Markierungsbalken (reale Groesse)
   // auf weissem Grund, mittig auf der Wand, kein Logo/keine Welle/kein Blau.
-  panel({ name: 'tuer_wand_rechts', dir: '+x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2 });
+  panel({ name: 'tuer_wand_rechts', dir: '+x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2, parent: tuerNeu });
   // Innenseite (Pool-/Lagerseite) bekommt bewusst KEIN Panel mehr -- zeigte
   // bisher dieselbe Kundengrafik wie aussen ("doppelt bedruckt", Nutzer-Meldung
   // 12.08.2026). Ohne Panel scheint die neutrale wsMat-Flaeche der Wandbox
@@ -938,14 +948,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // (DR.z1+BWZ.z0)/2 = 6,025 statt vorher 5,105. Welt-Y unveraendert
   // (identische Pixel-Positionen im Quellbild wie zuvor): cy_wand + h_wand/2 -
   // y_frac*h_wand, cy_wand=1,75, h_wand=3,50.
-  visitenkartenHalter(7.00, 1, 6.025, 1.619, 'karte_8');
-  visitenkartenHalter(7.00, 1, 6.025, 1.491, 'karte_9');
-  visitenkartenHalter(7.00, 1, 6.025, 1.367, 'karte_10');
-  visitenkartenHalter(7.00, 1, 6.025, 1.243, 'karte_11');
-  visitenkartenHalter(7.00, 1, 6.025, 1.120, 'karte_12');
-  visitenkartenHalter(7.00, 1, 6.025, 0.996, 'karte_13');
-  visitenkartenHalter(7.00, 1, 6.025, 0.872, 'karte_14');
-  panel({ name: 'tuer_wand_links', dir: '+x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2 });
+  visitenkartenHalter(7.00, 1, 6.025, 1.619, 'karte_8', tuerNeu);
+  visitenkartenHalter(7.00, 1, 6.025, 1.491, 'karte_9', tuerNeu);
+  visitenkartenHalter(7.00, 1, 6.025, 1.367, 'karte_10', tuerNeu);
+  visitenkartenHalter(7.00, 1, 6.025, 1.243, 'karte_11', tuerNeu);
+  visitenkartenHalter(7.00, 1, 6.025, 1.120, 'karte_12', tuerNeu);
+  visitenkartenHalter(7.00, 1, 6.025, 0.996, 'karte_13', tuerNeu);
+  visitenkartenHalter(7.00, 1, 6.025, 0.872, 'karte_14', tuerNeu);
+  panel({ name: 'tuer_wand_links', dir: '+x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2, parent: tuerNeu });
   // Innenseite (Pool-/Lagerseite) bekommt bewusst KEIN Panel mehr -- analog
   // tuer_wand_links-Innenseite (Runde 29) und tuer_sturz_neu-Innenseite (Task D):
   // zeigte bisher dieselbe Visitenkarten-Kundengrafik gespiegelt ("doppelt
@@ -960,7 +970,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const w = DR.z1 - DR.z0, hx = BL.x1 - BL.t / 2, hz = DR.z0;
     const edgeMat = GREY(0xe0ded8, 0.7);
     const leaf = box(-w / 2, -0.02, w / 2, 0.02, DR.h - 0.04, 0,
-      [KANTE, KANTE, KANTE, KANTE, edgeMat, edgeMat]);
+      [KANTE, KANTE, KANTE, KANTE, edgeMat, edgeMat], tuerNeu);
     DOOR.leaf = leaf;
     // Türgrafik auf dem Blatt selbst (04.08.2026): setzt das Sturz-Motiv
     // (tuer_wand, endet am unteren Rand im selben Markenblau #00ADEF) nahtlos
@@ -997,6 +1007,41 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       leaf.rotation.y = Math.atan2(-Math.cos(DOOR.angle), -Math.sin(DOOR.angle));
     };
     DOOR.setAngle(DOOR.angle);
+  })();
+
+  // --- Tuerwand-Vergleichsvariante (19.08.2026, Nutzerwunsch) ---
+  // Option 1 zeigt die VORHERIGE Seitenzuordnung (61cm an der Mooswand-Seite,
+  // 12cm an der Pool-Ecke, DR.z1 = BWZ.z0-0.12) statt der oben gebauten neuen
+  // (Option 2, Gruppe tuerNeu). Grund: reines Vergleichs-/Referenzmittel, da
+  // die neue Zuordnung die Tuer ueber die Mooswand hinweg legt (siehe Notiz
+  // bei DR/TW oben) und damit vermutlich nicht real baubar ist -- die alte
+  // Zuordnung bleibt deshalb als Option 1 abrufbar. Statisch: kein
+  // interaktives Tuerblatt (immer geschlossen, per DOOR.leaf bleibt weiterhin
+  // nur die tuerNeu-Tuer klickbar/ziehbar), keine eigenen 3D-Kartenhalter-
+  // Requisiten (die Markierungen stecken schon in tuer_wand_links.jpg).
+  const DR_ALT = { z1: BWZ.z0 - 0.12, h: 1.92 };
+  DR_ALT.z0 = DR_ALT.z1 - 0.80;
+  const TW_ALT = { z0: DR_ALT.z0 - 0.61 };
+  const tuerAlt = new W.Group(); tuerAlt.visible = false; root.add(tuerAlt);
+  box(BL.x1 - BL.t, TW_ALT.z0, BL.x1, DR_ALT.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE], tuerAlt);
+  box(BL.x1 - BL.t, DR_ALT.z1, BL.x1, BWZ.z0, 3.50, 0, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE], tuerAlt);
+  box(BL.x1 - BL.t, DR_ALT.z0, BL.x1, DR_ALT.z1, 3.50 - DR_ALT.h, DR_ALT.h, [wsMat, wsMat, wsMat, wsMat, KANTE, KANTE], tuerAlt);   // Sturz
+  panel({ name: 'tuer_sturz_neu', dir: '+x', w: DR_ALT.z1 - DR_ALT.z0, h: 3.50 - DR_ALT.h, cx: BL.x1 + 0.006, cy: DR_ALT.h + (3.50 - DR_ALT.h) / 2, cz: (DR_ALT.z0 + DR_ALT.z1) / 2, parent: tuerAlt });
+  // Breites 61cm-Segment (Kartenhalter-Grafik) hier auf der Mooswand-Seite --
+  // umgekehrt zu tuerNeu, siehe Kommentar oben.
+  panel({ name: 'tuer_wand_links', dir: '+x', w: DR_ALT.z0 - TW_ALT.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (TW_ALT.z0 + DR_ALT.z0) / 2, parent: tuerAlt });
+  panel({ name: 'tuer_wand_rechts', dir: '+x', w: BWZ.z0 - DR_ALT.z1, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (DR_ALT.z1 + BWZ.z0) / 2, parent: tuerAlt });
+  (function tuerblattAlt() {
+    // Statisches, geschlossenes Blatt -- gleiche Positionsformel wie
+    // DOOR.setAngle(0) oben, aber nicht interaktiv (kein Klick+Ziehen, keine
+    // Referenz in DOOR), damit pro Kamerastand immer nur eine Tuer greifbar ist.
+    const w = DR_ALT.z1 - DR_ALT.z0, hx = BL.x1 - BL.t / 2;
+    const edgeMat = GREY(0xe0ded8, 0.7);
+    const leaf = box(-w / 2, -0.02, w / 2, 0.02, DR_ALT.h - 0.04, 0,
+      [KANTE, KANTE, KANTE, KANTE, edgeMat, edgeMat], tuerAlt);
+    leaf.position.set(hx, (DR_ALT.h - 0.04) / 2, (DR_ALT.z0 + DR_ALT.z1) / 2);
+    leaf.rotation.y = -Math.PI / 2;
+    panel({ name: 'tuer_blatt', dir: '-z', w, h: DR_ALT.h - 0.04, cx: 0, cy: 0, cz: -0.021, parent: leaf }).material.side = W.DoubleSide;
   })();
 
   // --- Einbauten: Kombiküche, Regale, vier ungeklärte Striche auf der Rückwandlinie ---
@@ -2584,6 +2629,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function setOption(n) {
     const o = OPT[n];
     for (const k in o) setPanel(P[k], o[k]);
+    // Tuerwand-Vergleichsvariante (19.08.2026): Option 1 = vorige, real
+    // baubare Seitenzuordnung (Gruppe tuerAlt), Option 2 = neue, gegen die
+    // Kabinenmasse-Zeichnung korrigierte Zuordnung (Gruppe tuerNeu), siehe
+    // Kommentare bei DR/TW und tuerAlt weiter oben.
+    tuerNeu.visible = n == 2;
+    tuerAlt.visible = n == 1;
     document.querySelectorAll('[data-opt]').forEach(b => b.classList.toggle('on', b.dataset.opt == n));
   }
 
