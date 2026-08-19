@@ -854,15 +854,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // wirkten bisher wie duenne freistehende Saeulen ("Pappe") -- gleiche KANTE-Behandlung
   // wie die Wandscheibe, Stirnseiten (+z/-z) dunkler.
   // Reale Fabrikant-Masse (M+E Messebau GmbH, "Reber Kabinenmasse_0001.pdf",
-  // 11.08.2026, Handaufmass): rechtes Segment 12cm, Tuerbreite 80cm, linkes
-  // Segment 61cm, Tuerhoehe 1,92m (Sturzhoehe daraus 3,50-1,92=1,58m). Ersetzt
-  // die bisherige Schaetzung 0,45/0,70/0,18m + 2,10m Tuerhoehe (Spiegelmass der
-  // linken Wandscheibe Pos.9 angenommen, nie belegt). Rechtes Ende bleibt an
-  // BWZ.z0 verankert (strukturelle Ecke zur Rueckwand), von dort aus mit den
-  // drei Segmentbreiten nach links aufgebaut.
-  const DR = { z1: BWZ.z0 - 0.12, h: 1.92 };
+  // 11.08.2026, Handaufmass): 61cm + Tuerbreite 80cm + 12cm, Tuerhoehe 1,92m
+  // (Sturzhoehe daraus 3,50-1,92=1,58m). Ersetzt die bisherige Schaetzung
+  // 0,45/0,70/0,18m + 2,10m Tuerhoehe (Spiegelmass der linken Wandscheibe
+  // Pos.9 angenommen, nie belegt).
+  // KORREKTUR (19.08.2026, Nutzer-Hinweis): die Kabinenmasse-Zeichnung zeigt
+  // 61cm LINKS und 12cm RECHTS der Tuer, von der Seite aus betrachtet, von der
+  // die Wand tatsaechlich bedruckt/gesehen wird (+x, Pool-/Roboterpodest-Seite
+  // -- dieselbe Blickrichtung wie am "Tuer"-Blickpunkt im Modell). Aus dieser
+  // Blickrichtung zeigt kleineres z nach RECHTS (Mooswand-Richtung), groesseres
+  // z nach LINKS (Pool-Ecke/BWZ.z0). Die vorige Version legte das 61cm-Segment
+  // auf die kleinere-z-/Mooswand-Seite -- von dort erschien es rechts statt
+  // links wie in der Zeichnung. Segmente getauscht: 61cm jetzt an der Pool-Ecke
+  // (BWZ.z0-Seite), 12cm an der Mooswand-Seite (TW.z0-Seite). Rechtes Ende
+  // bleibt an BWZ.z0 verankert (strukturelle Ecke zur Rueckwand), von dort aus
+  // mit den drei Segmentbreiten nach links aufgebaut.
+  const DR = { z1: BWZ.z0 - 0.61, h: 1.92 };
   DR.z0 = DR.z1 - 0.80;                                 // lichte Öffnung, 0,80m breit
-  const TW = { z0: DR.z0 - 0.61 };
+  const TW = { z0: DR.z0 - 0.12 };
   // Task C (14.08.2026, schwarzer Strich rechts/oberhalb der Tuer): live per
   // Raycasting + gezieltem Ein-/Ausblenden lokalisiert und bestaetigt -- an der
   // Nahtstelle tuer_wand_links/Sturz (z=DR.z0) liegen die beiden KANTE-Stirnflaechen
@@ -898,43 +907,45 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // tuer_wand_links-Innenseite (Runde 29, siehe Kommentar unten): zeigte bisher
   // dieselbe Kundengrafik gespiegelt ("doppelt bedruckt"). Task D, 2026-08-12-
   // tuerwand-nachbesserung-podest-plan.md.
-  // Linkes Wandsegment (TW.z0..DR.z0, 0.45m), rechtes Segment (DR.z1..BWZ.z0,
-  // 0.18m) -- beide vorher nackt wsMat, jetzt Fortsetzung derselben Grafik.
+  // Zwei Wandsegmente neben der Tuer: TW.z0..DR.z0 (Mooswand-Seite, 12cm),
+  // DR.z1..BWZ.z0 (Pool-Ecke, 61cm) -- siehe Korrektur 19.08.2026 bei den
+  // DR/TW-Konstanten oben. Nur das breite 61cm-Segment traegt die
+  // Kartenhalter-Grafik (tuer_wand_links.jpg, siehe Bugfix 05.08.2026 unten);
+  // das schmale 12cm-Segment bekommt die reine Wellen-Flaeche ohne Marker
+  // (tuer_wand_rechts.jpg) -- ein Marken-/Fotomotiv ist auf 12cm nicht mehr
+  // lesbar erkennbar.
   // BUGFIX (05.08.2026): urspruenglich sollte das Flammen+Tropfen-Icon vom
-  // Sturz ueber die Segmentgrenze hinweg auf tuer_wand_links weiterlaufen
-  // (wie der abstrakte Swoosh bei Pos.6/8), sah aber auf dem nur 0.15m
-  // schmalen Segment wie ein zufaelliger Farbfleck statt einer Fortsetzung
-  // aus -- ein Marken-Icon ist anders als eine Wellenlinie kein Motiv, das
-  // sich ueber eine derart schmale, sichtbar getrennte Wandfuge hinweg lesbar
-  // aufteilen laesst (Nutzer-Meldung "Logo abgeschnitten", per Live-Query
-  // World-Position/-Richtung verifiziert: kein Koordinatenfehler, siehe
-  // 2026-08-04-tuer-sturz-logo-fix-plan.md). Fix: tuer_sturz_neu.jpg zeigt
-  // Reine Weissflaeche mit den 7 zentrierten Kartenhalter-Markern (Korrektur
-  // 17.08.2026, dritte Runde): Nutzer wollte kein halb abgeschnittenes Logo
-  // mehr auf dieser Flaeche -- tuer_wand_links.jpg zeigt jetzt nur noch die
-  // 7 grauen Markierungsbalken (reale Groesse) auf weissem Grund, mittig auf
-  // der Wand, kein Logo/keine Welle/kein Blau mehr.
-  panel({ name: 'tuer_wand_links', dir: '+x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2 });
+  // Sturz ueber die Segmentgrenze hinweg auf das schmale Seitensegment
+  // weiterlaufen (wie der abstrakte Swoosh bei Pos.6/8), sah auf einem derart
+  // schmalen Segment (damals 0.15m) aber wie ein zufaelliger Farbfleck statt
+  // einer Fortsetzung aus -- ein Marken-Icon ist anders als eine Wellenlinie
+  // kein Motiv, das sich ueber eine derart schmale, sichtbar getrennte
+  // Wandfuge hinweg lesbar aufteilen laesst (Nutzer-Meldung "Logo
+  // abgeschnitten", per Live-Query World-Position/-Richtung verifiziert: kein
+  // Koordinatenfehler, siehe 2026-08-04-tuer-sturz-logo-fix-plan.md). Fix:
+  // tuer_sturz_neu.jpg zeigt seither eine reine Weissflaeche mit den 7
+  // zentrierten Kartenhalter-Markern (Korrektur 17.08.2026, dritte Runde);
+  // tuer_wand_links.jpg zeigt die 7 grauen Markierungsbalken (reale Groesse)
+  // auf weissem Grund, mittig auf der Wand, kein Logo/keine Welle/kein Blau.
+  panel({ name: 'tuer_wand_rechts', dir: '+x', w: DR.z0 - TW.z0, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (TW.z0 + DR.z0) / 2 });
   // Innenseite (Pool-/Lagerseite) bekommt bewusst KEIN Panel mehr -- zeigte
   // bisher dieselbe Kundengrafik wie aussen ("doppelt bedruckt", Nutzer-Meldung
   // 12.08.2026). Ohne Panel scheint die neutrale wsMat-Flaeche der Wandbox
   // (Zeile ~427) durch, wie an jeder anderen unbedruckten Innenwand des Blocks.
-  // Visitenkartenhalter mittig auf der breiten Seite (Korrektur 17.08.2026,
-  // dritte Runde): Marker-Balken sitzen jetzt zentriert im neuen Composite
-  // statt an der Tuerkante -> x_frac=0,5 -> Welt-Z = cz_panel = (TW.z0+DR.z0)/2
-  // = 5,105 fuer alle 7 Halter (kein Offset mehr noetig). Welt-Y unveraendert
+  // Visitenkartenhalter mittig auf der breiten (61cm) Seite -- seit Korrektur
+  // 19.08.2026 an DR.z1..BWZ.z0 (Pool-Ecke) statt TW.z0..DR.z0
+  // (Mooswand-Seite, siehe Kommentar bei DR/TW oben): Welt-Z =
+  // (DR.z1+BWZ.z0)/2 = 6,025 statt vorher 5,105. Welt-Y unveraendert
   // (identische Pixel-Positionen im Quellbild wie zuvor): cy_wand + h_wand/2 -
   // y_frac*h_wand, cy_wand=1,75, h_wand=3,50.
-  visitenkartenHalter(7.00, 1, 5.105, 1.619, 'karte_8');
-  visitenkartenHalter(7.00, 1, 5.105, 1.491, 'karte_9');
-  visitenkartenHalter(7.00, 1, 5.105, 1.367, 'karte_10');
-  visitenkartenHalter(7.00, 1, 5.105, 1.243, 'karte_11');
-  visitenkartenHalter(7.00, 1, 5.105, 1.120, 'karte_12');
-  visitenkartenHalter(7.00, 1, 5.105, 0.996, 'karte_13');
-  visitenkartenHalter(7.00, 1, 5.105, 0.872, 'karte_14');
-  // KEINE Visitenkartenhalter mehr rechts der Tuer (Pool-Seite): tuer_wand_rechts.jpg
-  // ist jetzt reine Weiss->Welle->Blau-Flaeche ohne Marker (Korrektur 17.08.2026).
-  panel({ name: 'tuer_wand_rechts', dir: '+x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2 });
+  visitenkartenHalter(7.00, 1, 6.025, 1.619, 'karte_8');
+  visitenkartenHalter(7.00, 1, 6.025, 1.491, 'karte_9');
+  visitenkartenHalter(7.00, 1, 6.025, 1.367, 'karte_10');
+  visitenkartenHalter(7.00, 1, 6.025, 1.243, 'karte_11');
+  visitenkartenHalter(7.00, 1, 6.025, 1.120, 'karte_12');
+  visitenkartenHalter(7.00, 1, 6.025, 0.996, 'karte_13');
+  visitenkartenHalter(7.00, 1, 6.025, 0.872, 'karte_14');
+  panel({ name: 'tuer_wand_links', dir: '+x', w: BWZ.z0 - DR.z1, h: 3.50, cx: BL.x1 + 0.006, cy: 1.75, cz: (DR.z1 + BWZ.z0) / 2 });
   // Innenseite (Pool-/Lagerseite) bekommt bewusst KEIN Panel mehr -- analog
   // tuer_wand_links-Innenseite (Runde 29) und tuer_sturz_neu-Innenseite (Task D):
   // zeigte bisher dieselbe Visitenkarten-Kundengrafik gespiegelt ("doppelt
